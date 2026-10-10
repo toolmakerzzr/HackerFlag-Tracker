@@ -1,15 +1,17 @@
 package com.example
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Warning
@@ -61,6 +65,7 @@ import com.example.ui.components.PoliceSosButton
 import com.example.ui.screens.ActiveTheftPanicScreen
 import com.example.ui.screens.AiDefenseAssistantDialog
 import com.example.ui.screens.B2bApiScreen
+import com.example.ui.screens.BiometricEntryGateScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.FinancialLockdownScreen
 import com.example.ui.screens.ImeiRadarScreen
@@ -88,7 +93,7 @@ enum class ScreenState {
     B2B_QR
 }
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -102,6 +107,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun HackerflagApp() {
+    var isOwnerAuthenticated by remember { mutableStateOf(false) }
     var currentScreen by remember { mutableStateOf(ScreenState.DASHBOARD) }
     var showAiDialog by remember { mutableStateOf(false) }
     var aiDialogInitialQuery by remember { mutableStateOf("") }
@@ -111,6 +117,21 @@ fun HackerflagApp() {
     var bankingTabIndex by remember { mutableIntStateOf(0) }
     var legalTabIndex by remember { mutableIntStateOf(0) }
     var b2bTabIndex by remember { mutableIntStateOf(0) }
+
+    if (!isOwnerAuthenticated) {
+        ComfortableBackground(modifier = Modifier.fillMaxSize()) {
+            BiometricEntryGateScreen(
+                onAuthenticationSuccess = {
+                    isOwnerAuthenticated = true
+                }
+            )
+        }
+        return
+    }
+
+    BackHandler(enabled = currentScreen != ScreenState.DASHBOARD) {
+        currentScreen = ScreenState.DASHBOARD
+    }
 
     ComfortableBackground(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -177,15 +198,43 @@ fun HackerflagApp() {
                                         fontFamily = FontFamily.Monospace
                                     )
                                     Text(
-                                        text = " // MADE BY AKASH",
+                                        text = " // MADE BY AKASH TIWARI",
                                         color = CyberGold,
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Black,
                                         fontFamily = FontFamily.Monospace
                                     )
                                 }
-                                // 3-Second Police SOS Hold Button in Upper Right Corner
-                                PoliceSosButton()
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(CyberAlertCrimson.copy(alpha = 0.1f))
+                                            .border(0.8.dp, CyberAlertCrimson.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                            .clickable { isOwnerAuthenticated = false }
+                                            .padding(horizontal = 7.dp, vertical = 4.dp)
+                                            .testTag("secondary_lock_button")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = "Lock Terminal",
+                                            tint = CyberAlertCrimson,
+                                            modifier = Modifier.size(11.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "LOCK",
+                                            color = CyberAlertCrimson,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Black,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // 3-Second Police SOS Hold Button in Upper Right Corner
+                                    PoliceSosButton()
+                                }
                             }
                         }
 
@@ -241,7 +290,8 @@ fun HackerflagApp() {
                                                 currentScreen = ScreenState.B2B_QR
                                             }
                                         }
-                                    }
+                                    },
+                                    onLockConsole = { isOwnerAuthenticated = false }
                                 )
                                 ScreenState.ACTIVE_THEFT -> ActiveTheftPanicScreen(
                                     onNavigateBack = { currentScreen = ScreenState.DASHBOARD },

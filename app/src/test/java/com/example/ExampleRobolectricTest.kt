@@ -59,4 +59,13 @@ class ExampleRobolectricTest {
         val emptyResults = FeatureCatalog.search("xyznonexistent123")
         assertTrue(emptyResults.isEmpty())
     }
+
+    @Test
+    fun `verify biometric auth manager availability and emergency passcode`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val availability = com.example.data.security.BiometricAuthManager.checkAvailability(context)
+        assertNotNull(availability)
+        assertNotNull(availability.description)
+        assertEquals("9999", com.example.data.security.BiometricAuthManager.DEFAULT_EMERGENCY_PASSCODE)
+    }
 }

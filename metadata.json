@@ -1,6 +1,6 @@
 {
   "name": "Hackerflag Tracker",
-  "description": "Ultra-secure anti-theft, cyber defense, and emergency mitigation platform for theft victims, law enforcement coordination, and secondhand device verification.",
+  "description": "Ultra-secure anti-theft and emergency mitigation platform made by Akash Tiwari. Features BiometricPrompt owner entry point, 3-sec Police SOS, and IMEI radar.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

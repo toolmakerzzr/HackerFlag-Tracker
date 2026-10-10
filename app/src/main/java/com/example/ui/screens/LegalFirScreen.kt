@@ -160,7 +160,7 @@ fun LegalFirScreen(
            initiate cyber cell cell-tower triangulation, provide an official acknowledgment
            for Sanchar Saathi (CEIR) national telecom blacklisting, and trace the stolen device.
         
-        VERIFIED & DIGITALLY STAMPED BY HACKERFLAG DEFENSE ENGINE (ENGINEERED BY AKASH).
+        VERIFIED & DIGITALLY STAMPED BY HACKERFLAG DEFENSE ENGINE (ENGINEERED BY AKASH TIWARI).
         ======================================================================
         """.trimIndent()
     }

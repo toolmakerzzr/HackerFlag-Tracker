@@ -3,6 +3,7 @@ package com.example.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Dialpad
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
@@ -58,6 +60,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.fragment.app.FragmentActivity
+import com.example.data.security.BiometricAuthManager
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -105,6 +109,7 @@ fun DashboardScreen(
     onNavigateToB2bQr: (tab: Int) -> Unit,
     onOpenAiAssistant: (initialQuery: String) -> Unit,
     onNavigateToFeature: (FeatureItem) -> Unit,
+    onLockConsole: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -149,7 +154,7 @@ fun DashboardScreen(
         // 1. Live Intelligence Telemetry Ticker
         item {
             Spacer(modifier = Modifier.height(2.dp))
-            CyberTicker(text = "CEIR Sync: ONLINE | 1930 Router: ACTIVE | Made by Akash | Zero-Trust Armed")
+            CyberTicker(text = "CEIR Sync: ONLINE | 1930 Router: ACTIVE | Made by Akash Tiwari | Zero-Trust Armed")
         }
 
         // 2. Cyber Header with Badge, Titles, & Upper Right Corner 3-Sec Police SOS Button
@@ -207,7 +212,7 @@ fun DashboardScreen(
                                         .padding(horizontal = 5.dp, vertical = 1.dp)
                                 ) {
                                     Text(
-                                        text = "BY AKASH",
+                                        text = "BY AKASH TIWARI",
                                         color = CyberGoldDark,
                                         fontSize = 8.5.sp,
                                         fontWeight = FontWeight.Black,
@@ -231,6 +236,32 @@ fun DashboardScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     fontFamily = FontFamily.Monospace
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(CyberCyan.copy(alpha = 0.12f))
+                                        .border(0.8.dp, CyberCyan.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
+                                        .clickable { onLockConsole() }
+                                        .padding(horizontal = 5.dp, vertical = 1.5.dp)
+                                        .testTag("header_quick_lock_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Lock",
+                                        tint = CyberCyan,
+                                        modifier = Modifier.size(9.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = "LOCK",
+                                        color = CyberCyan,
+                                        fontSize = 8.5.sp,
+                                        fontWeight = FontWeight.Black,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
                             }
                         }
                     }
@@ -239,6 +270,172 @@ fun DashboardScreen(
 
                     // Upper Right Corner: 3-Second Hold Police SOS Button
                     PoliceSosButton()
+                }
+            }
+        }
+
+        // 2.5. Biometric Entry Point & Emergency Controls Console Card
+        item {
+            CyberCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("biometric_guard_card"),
+                borderColor = CyberCyan.copy(alpha = 0.45f)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .clip(CircleShape)
+                                    .background(CyberCyan.copy(alpha = 0.12f))
+                                    .border(1.dp, CyberCyan.copy(alpha = 0.4f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Fingerprint,
+                                    contentDescription = null,
+                                    tint = CyberCyan,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(9.dp))
+                            Column {
+                                Text(
+                                    text = "BIOMETRIC ENTRY GUARD",
+                                    color = CyberTextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                                Text(
+                                    text = "OWNER VERIFIED: AKASH TIWARI",
+                                    color = CyberSuccessGreen,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
+                        // Instant Lock button
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(CyberAlertCrimson.copy(alpha = 0.1f))
+                                .border(0.8.dp, CyberAlertCrimson.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                .clickable { onLockConsole() }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .testTag("lock_console_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Lock",
+                                tint = CyberAlertCrimson,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "LOCK CONSOLE",
+                                color = CyberAlertCrimson,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Emergency controls (3-second Police SOS, Device Wipe, Bank Freeze) are locked to owner biometrics via Android BiometricPrompt API.",
+                        color = CyberTextSecondary,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                (context as? FragmentActivity)?.let { act ->
+                                    BiometricAuthManager.showBiometricPrompt(
+                                        activity = act,
+                                        title = "Hackerflag Biometric Test",
+                                        subtitle = "Verify Owner Biometrics",
+                                        description = "Testing BiometricPrompt API integration for emergency controls.",
+                                        onSuccess = {
+                                            Toast.makeText(context, "BiometricPrompt: Owner Verified (Akash Tiwari)", Toast.LENGTH_SHORT).show()
+                                        },
+                                        onError = { _, err ->
+                                            Toast.makeText(context, "BiometricPrompt: $err", Toast.LENGTH_SHORT).show()
+                                        },
+                                        onFailed = {
+                                            Toast.makeText(context, "Biometric recognition failed", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CyberSurfaceHigh,
+                                contentColor = CyberCyan
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("test_biometric_button")
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Fingerprint,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "TEST BIOMETRIC",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = { onLockConsole() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CyberCyan,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .testTag("secure_lock_button")
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "LOCK CONSOLE",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -647,7 +844,7 @@ fun DashboardScreen(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "MADE BY AKASH",
+                                    text = "MADE BY AKASH TIWARI",
                                     color = CyberGoldDark,
                                     fontSize = 8.5.sp,
                                     fontWeight = FontWeight.Black,
@@ -657,7 +854,7 @@ fun DashboardScreen(
                         }
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
-                            text = "Crafted with ❤️ by Akash • Anti-Theft & Cybercrime Mitigation Platform with Zero-Trust Security",
+                            text = "Crafted with ❤️ by Akash Tiwari • Anti-Theft & Cybercrime Mitigation Platform with Zero-Trust Security",
                             color = CyberTextSecondary,
                             fontSize = 11.sp,
                             lineHeight = 15.sp

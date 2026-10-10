@@ -18,7 +18,7 @@ import com.example.ui.theme.TextureGridLine
 /**
  * Ultra-Comfortable textured background providing a soft luminous paper-grid aesthetic.
  * Eliminates harsh flat glare while remaining ultra-light, tactile, and soothing for prolonged viewing.
- * Crafted & Engineered by Akash for zero-fatigue high-clarity viewing.
+ * Crafted & Engineered by Akash Tiwari for zero-fatigue high-clarity viewing.
  */
 @Composable
 fun ComfortableBackground(

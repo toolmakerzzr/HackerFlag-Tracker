@@ -25,9 +25,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -65,6 +65,7 @@ import com.example.ui.theme.CyberBackground
 import com.example.ui.theme.CyberBorder
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.CyberGold
+import com.example.ui.theme.CyberGoldDark
 import com.example.ui.theme.CyberSuccessGreen
 import com.example.ui.theme.CyberSurface
 import com.example.ui.theme.CyberSurfaceHigh
@@ -165,16 +166,33 @@ fun AiDefenseAssistantDialog(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
-                            Text(
-                                text = "CYBER DEFENSE AI CONSULTANT",
-                                color = CyberCyan,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.5.sp
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "CYBER DEFENSE AI",
+                                    color = CyberCyan,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(CyberGold.copy(alpha = 0.18f))
+                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = "BY AKASH",
+                                        color = CyberGoldDark,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Black,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
                             Text(
                                 text = modelUsed,
-                                color = CyberGold,
+                                color = CyberTextSecondary,
                                 fontSize = 9.sp,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -300,7 +318,7 @@ fun AiDefenseAssistantDialog(
                             .background(CyberCyan)
                             .testTag("ai_send_button")
                     ) {
-                        Icon(imageVector = Icons.Default.Send, contentDescription = "Send", tint = CyberBackground)
+                        Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = CyberBackground)
                     }
                 }
             }

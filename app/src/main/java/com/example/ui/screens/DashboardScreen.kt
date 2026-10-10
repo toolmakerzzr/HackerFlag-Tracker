@@ -28,11 +28,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Dialpad
 import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.QrCode
@@ -142,14 +142,14 @@ fun DashboardScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CyberBackground)
+            .background(Color.Transparent)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // 1. Live Intelligence Telemetry Ticker
         item {
             Spacer(modifier = Modifier.height(2.dp))
-            CyberTicker(text = "CEIR Sync: ONLINE | 1930 Router: ACTIVE | Zero-Trust SHA-256 Armed")
+            CyberTicker(text = "CEIR Sync: ONLINE | 1930 Router: ACTIVE | Made by Akash | Zero-Trust Armed")
         }
 
         // 2. Cyber Header with Badge, Titles, & Upper Right Corner 3-Sec Police SOS Button
@@ -191,13 +191,30 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Black,
                                 letterSpacing = 0.5.sp
                             )
-                            Text(
-                                text = "DEFENSE & ANTI-THEFT",
-                                color = CyberCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "DEFENSE PLATFORM",
+                                    color = CyberCyan,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(CyberGold.copy(alpha = 0.16f))
+                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = "BY AKASH",
+                                        color = CyberGoldDark,
+                                        fontSize = 8.5.sp,
+                                        fontWeight = FontWeight.Black,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
@@ -586,8 +603,72 @@ fun DashboardScreen(
             TimelineEventRow(event = event)
         }
 
+        // 10. Platform Creator & Architecture Badge
         item {
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            CyberCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("made_by_akash_footer_badge"),
+                borderColor = CyberCyan.copy(alpha = 0.35f)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(CyberCyan.copy(alpha = 0.12f))
+                            .border(1.2.dp, CyberCyan.copy(alpha = 0.4f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "🛡️", fontSize = 20.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "HACKERFLAG DEFENSE",
+                                color = CyberTextPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(CyberGold.copy(alpha = 0.18f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "MADE BY AKASH",
+                                    color = CyberGoldDark,
+                                    fontSize = 8.5.sp,
+                                    fontWeight = FontWeight.Black,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "Crafted with ❤️ by Akash • Anti-Theft & Cybercrime Mitigation Platform with Zero-Trust Security",
+                            color = CyberTextSecondary,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(26.dp))
         }
     }
 }
@@ -629,7 +710,7 @@ private fun SearchSuggestionHelpCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.HelpOutline,
+                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
                         contentDescription = "Search Help",
                         tint = CyberWarningAmber,
                         modifier = Modifier.size(20.dp)

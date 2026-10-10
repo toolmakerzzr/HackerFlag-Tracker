@@ -1,21 +1,21 @@
 package com.example.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
-private val HackerflagDarkColorScheme = darkColorScheme(
+private val HackerflagLightColorScheme = lightColorScheme(
     primary = CyberCyan,
-    onPrimary = CyberBackground,
+    onPrimary = Color.White,
     primaryContainer = CyberSurfaceVariant,
     onPrimaryContainer = CyberCyan,
     secondary = CyberGold,
-    onSecondary = CyberBackground,
-    secondaryContainer = CyberGoldDark,
-    onSecondaryContainer = CyberGold,
+    onSecondary = Color.White,
+    secondaryContainer = CyberSurfaceVariant,
+    onSecondaryContainer = CyberGoldDark,
     tertiary = CyberAlertCrimson,
-    onTertiary = CyberTextPrimary,
+    onTertiary = Color.White,
     background = CyberBackground,
     onBackground = CyberTextPrimary,
     surface = CyberSurface,
@@ -24,16 +24,16 @@ private val HackerflagDarkColorScheme = darkColorScheme(
     onSurfaceVariant = CyberTextSecondary,
     outline = CyberBorder,
     error = CyberAlertCrimson,
-    onError = CyberTextPrimary
+    onError = Color.White
 )
 
 @Composable
 fun HackerflagTheme(
-    darkTheme: Boolean = true, // Cyberpunk theme looks best in deep dark mode
+    darkTheme: Boolean = false, // Ultra Light UI
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = HackerflagDarkColorScheme,
+        colorScheme = HackerflagLightColorScheme,
         typography = Typography,
         content = content
     )

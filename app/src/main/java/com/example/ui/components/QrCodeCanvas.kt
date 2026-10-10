@@ -15,7 +15,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.CyberBackground
+import com.example.ui.theme.CyberBorder
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.CyberGold
 
@@ -33,7 +33,7 @@ fun OwnershipQrCanvas(
         modifier = modifier
             .size(sizeDp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF04070D))
+            .background(Color.White)
             .border(1.5.dp, CyberCyan, RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
@@ -50,7 +50,7 @@ fun OwnershipQrCanvas(
                 )
                 // Inner 5x5 cutout
                 drawRect(
-                    color = Color(0xFF04070D),
+                    color = Color.White,
                     topLeft = Offset((startX + 1) * moduleSize, (startY + 1) * moduleSize),
                     size = Size(5 * moduleSize, 5 * moduleSize)
                 )

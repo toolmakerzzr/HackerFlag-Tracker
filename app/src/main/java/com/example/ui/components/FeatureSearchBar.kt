@@ -78,9 +78,9 @@ fun FeatureSearchBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp))
+                .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp))
                 .clip(RoundedCornerShape(16.dp))
-                .background(CyberSurfaceHigh)
+                .background(Color.White)
                 .border(
                     width = if (query.isNotBlank()) 1.5.dp else 1.dp,
                     color = if (query.isNotBlank()) CyberCyan else CyberBorder,

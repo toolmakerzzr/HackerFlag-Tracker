@@ -77,19 +77,19 @@ fun CyberCard(
 
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-        shape = RoundedCornerShape(12.dp),
-        color = CyberSurface,
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White,
         border = finalBorder,
-        tonalElevation = 2.dp,
-        shadowElevation = if (glowEffect) 8.dp else 2.dp
+        tonalElevation = 1.dp,
+        shadowElevation = if (glowEffect) 6.dp else 1.5.dp
     ) {
         Box(
             modifier = Modifier
                 .background(
                     Brush.verticalGradient(
-                        listOf(CyberSurfaceHigh.copy(alpha = 0.5f), CyberSurface)
+                        listOf(Color.White, Color(0xFFFAFBFE))
                     )
                 )
                 .padding(16.dp)
@@ -110,7 +110,7 @@ fun EmergencyAlertButton(
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
-        targetValue = 1.03f,
+        targetValue = 1.025f,
         animationSpec = infiniteRepeatable(
             animation = tween(800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -127,14 +127,14 @@ fun EmergencyAlertButton(
             .testTag(testTag),
         color = CyberAlertCrimson,
         shape = RoundedCornerShape(14.dp),
-        shadowElevation = 12.dp,
-        border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.5f))
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.6f))
     ) {
         Row(
             modifier = Modifier
                 .background(
                     Brush.horizontalGradient(
-                        listOf(CyberAlertCrimson, Color(0xFFC70039))
+                        listOf(CyberAlertCrimson, Color(0xFFB91C1C))
                     )
                 )
                 .padding(horizontal = 20.dp, vertical = 14.dp),
@@ -144,7 +144,7 @@ fun EmergencyAlertButton(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.2f)),
+                    .background(Color.White.copy(alpha = 0.22f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -160,12 +160,12 @@ fun EmergencyAlertButton(
                     text = text,
                     color = Color.White,
                     fontWeight = FontWeight.Black,
-                    fontSize = 17.sp,
+                    fontSize = 16.sp,
                     letterSpacing = 0.5.sp
                 )
                 Text(
                     text = subtext,
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = Color.White.copy(alpha = 0.9f),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -184,8 +184,8 @@ fun StatusPill(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(color.copy(alpha = 0.15f))
-            .border(1.dp, color.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.12f))
+            .border(1.dp, color.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
             .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
         Text(
@@ -207,9 +207,10 @@ fun CyberTicker(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(CyberSurfaceHigh)
-            .border(0.5.dp, CyberCyan.copy(alpha = 0.3f))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFFEDF3FA))
+            .border(0.8.dp, CyberCyan.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -296,7 +297,7 @@ fun RiskScoreDial(
             progress = { score / 100f },
             modifier = Modifier.size(84.dp),
             color = color,
-            trackColor = CyberBorder,
+            trackColor = Color(0xFFE2E8F0),
             strokeWidth = 7.dp,
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

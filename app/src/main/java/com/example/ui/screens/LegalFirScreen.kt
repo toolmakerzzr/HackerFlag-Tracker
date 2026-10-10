@@ -56,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
@@ -159,7 +160,7 @@ fun LegalFirScreen(
            initiate cyber cell cell-tower triangulation, provide an official acknowledgment
            for Sanchar Saathi (CEIR) national telecom blacklisting, and trace the stolen device.
         
-        VERIFIED & DIGITALLY STAMPED BY HACKERFLAG DEFENSE ENGINE.
+        VERIFIED & DIGITALLY STAMPED BY HACKERFLAG DEFENSE ENGINE (ENGINEERED BY AKASH).
         ======================================================================
         """.trimIndent()
     }
@@ -212,7 +213,7 @@ fun LegalFirScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CyberBackground)
+            .background(Color.Transparent)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

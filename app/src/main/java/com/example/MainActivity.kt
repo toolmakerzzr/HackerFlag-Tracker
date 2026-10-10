@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.FeatureItem
+import com.example.ui.components.ComfortableBackground
 import com.example.ui.components.PoliceSosButton
 import com.example.ui.screens.ActiveTheftPanicScreen
 import com.example.ui.screens.AiDefenseAssistantDialog
@@ -111,74 +112,84 @@ fun HackerflagApp() {
     var legalTabIndex by remember { mutableIntStateOf(0) }
     var b2bTabIndex by remember { mutableIntStateOf(0) }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = CyberBackground,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            CyberBottomNavigation(
-                currentScreen = currentScreen,
-                onScreenSelected = { currentScreen = it }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    aiDialogInitialQuery = ""
-                    showAiDialog = true
-                },
-                containerColor = CyberCyan,
-                contentColor = CyberBackground,
-                shape = CircleShape,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .testTag("fab_ai_assistant")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SmartToy,
-                    contentDescription = "AI Defense Assistant",
-                    modifier = Modifier.size(24.dp)
+    ComfortableBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            bottomBar = {
+                CyberBottomNavigation(
+                    currentScreen = currentScreen,
+                    onScreenSelected = { currentScreen = it }
                 )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        aiDialogInitialQuery = ""
+                        showAiDialog = true
+                    },
+                    containerColor = CyberCyan,
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .testTag("fab_ai_assistant")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SmartToy,
+                        contentDescription = "AI Defense Assistant",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(WindowInsets.systemBars.asPaddingValues()),
-            contentAlignment = Alignment.TopCenter
-        ) {
+        ) { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .widthIn(max = 640.dp)
+                    .padding(innerPadding)
+                    .padding(WindowInsets.systemBars.asPaddingValues()),
+                contentAlignment = Alignment.TopCenter
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Global Upper Right Corner Bar when on secondary screens
-                    if (currentScreen != ScreenState.DASHBOARD) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(CyberSurfaceHigh)
-                                .border(0.5.dp, CyberBorder)
-                                .padding(horizontal = 14.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "HACKERFLAG // ZERO-TRUST ARMED",
-                                color = CyberCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                fontFamily = FontFamily.Monospace
-                            )
-                            // 3-Second Police SOS Hold Button in Upper Right Corner
-                            PoliceSosButton()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = 640.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Global Upper Right Corner Bar when on secondary screens
+                        if (currentScreen != ScreenState.DASHBOARD) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.White)
+                                    .border(0.8.dp, CyberBorder)
+                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "HACKERFLAG",
+                                        color = CyberCyan,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                    Text(
+                                        text = " // MADE BY AKASH",
+                                        color = CyberGold,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                                // 3-Second Police SOS Hold Button in Upper Right Corner
+                                PoliceSosButton()
+                            }
                         }
-                    }
 
-                    Box(modifier = Modifier.weight(1f)) {
+                        Box(modifier = Modifier.weight(1f)) {
                         AnimatedContent(
                             targetState = currentScreen,
                             transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -263,6 +274,7 @@ fun HackerflagApp() {
                     }
                 }
             }
+            }
         }
     }
 
@@ -283,8 +295,8 @@ fun CyberBottomNavigation(
     onScreenSelected: (ScreenState) -> Unit
 ) {
     NavigationBar(
-        containerColor = CyberSurfaceHigh,
-        tonalElevation = 6.dp,
+        containerColor = Color.White.copy(alpha = 0.98f),
+        tonalElevation = 4.dp,
         modifier = Modifier
             .fillMaxWidth()
             .border(0.8.dp, CyberBorder)

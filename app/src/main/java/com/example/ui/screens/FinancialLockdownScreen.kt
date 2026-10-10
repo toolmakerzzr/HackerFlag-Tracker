@@ -196,7 +196,7 @@ fun FinancialLockdownScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CyberBackground)
+            .background(Color.Transparent)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

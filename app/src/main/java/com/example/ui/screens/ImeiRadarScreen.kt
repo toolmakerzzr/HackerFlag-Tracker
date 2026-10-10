@@ -27,12 +27,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.SimCardAlert
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
@@ -180,7 +180,7 @@ fun ImeiRadarScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CyberBackground)
+            .background(Color.Transparent)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -338,7 +338,7 @@ fun ImeiRadarScreen(
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.fillMaxWidth().testTag("silent_ping_button")
                         ) {
-                            Icon(imageVector = Icons.Default.Send, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
+                            Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(text = "DISPATCH SILENT EMERGENCY PING PROTOCOL", color = CyberCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }

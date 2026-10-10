@@ -21,9 +21,9 @@ class CyberDefenseAiService(private val context: Context) {
         .writeTimeout(4, TimeUnit.SECONDS)
         .build()
 
-    // Up-to-date Gemini Models (gemini-3.5-flash / gemini-flash-latest)
-    private val primaryModel = "gemini-3.5-flash"
-    private val secondaryModel = "gemini-flash-latest"
+    // Up-to-date Gemini Models
+    private val primaryModel = "gemini-2.5-flash"
+    private val secondaryModel = "gemini-1.5-flash"
 
     suspend fun queryAiDefense(userQuery: String, isActiveTheft: Boolean = false): AiDefenseResult = withContext(Dispatchers.IO) {
         val apiKey = BuildConfig.GEMINI_API_KEY

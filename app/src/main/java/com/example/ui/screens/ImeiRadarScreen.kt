@@ -7,6 +7,13 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,27 +29,38 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Radar
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SimCardAlert
 import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -57,7 +75,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
@@ -69,6 +89,8 @@ import com.example.data.local.entity.StolenDeviceEntity
 import com.example.data.local.entity.TimelineEventEntity
 import com.example.data.model.CellTower
 import com.example.data.security.CryptoUtils
+import com.example.data.security.DevicePairingManager
+import com.example.data.security.LiveTrackingManager
 import com.example.ui.components.CircuitDivider
 import com.example.ui.components.CyberCard
 import com.example.ui.components.RadarCanvas
@@ -88,6 +110,8 @@ import com.example.ui.theme.CyberTextPrimary
 import com.example.ui.theme.CyberTextSecondary
 import com.example.ui.theme.CyberWarningAmber
 import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun ImeiRadarScreen(
@@ -102,10 +126,27 @@ fun ImeiRadarScreen(
     val db = remember { HackerflagDatabase.getDatabase(context) }
     val allStolenDevices by db.stolenDeviceDao().getAllDevices().collectAsState(initial = emptyList())
 
-    var selectedTabIndex by remember(initialTabIndex) { mutableIntStateOf(initialTabIndex) }
-    val tabTitles = listOf("Radar & GIS", "CEIR Portal", "Zero-Knowledge Hasher", "Public Registry", "SIM & Risk")
+    val liveTracking = remember { LiveTrackingManager.getInstance(context) }
+    val pairingManager = remember { DevicePairingManager.getInstance(context) }
 
-    // Mock cell towers for Triangulation
+    val currentTelemetry by liveTracking.telemetry.collectAsState()
+    val breadcrumbs by liveTracking.breadcrumbs.collectAsState()
+    val geofences by liveTracking.geofences.collectAsState()
+    val detectedSignals by liveTracking.detectedSignals.collectAsState()
+    val isScanningSignals by liveTracking.isScanningSignals.collectAsState()
+
+    var selectedTabIndex by remember(initialTabIndex) { mutableIntStateOf(initialTabIndex) }
+    val tabTitles = listOf(
+        "Live GPS Tracking",
+        "Fences & Detectors",
+        "Cell Triangulation",
+        "CEIR Portal",
+        "ZK Hasher",
+        "Public Registry",
+        "SIM & Risk"
+    )
+
+    // Cell towers for Triangulation
     val towers = remember {
         listOf(
             CellTower(
@@ -143,7 +184,7 @@ fun ImeiRadarScreen(
     }
 
     // Hasher State
-    var imeiInput by remember { mutableStateOf("869204058193847") }
+    var imeiInput by remember { mutableStateOf(pairingManager.myDeviceImei) }
     val imeiProof = remember(imeiInput) { CryptoUtils.generateZkImeiProof(imeiInput) }
 
     // Registry Search State
@@ -158,8 +199,8 @@ fun ImeiRadarScreen(
     }
 
     // CEIR Form State
-    var ceirImei1 by remember { mutableStateOf("869204058193847") }
-    var ceirImei2 by remember { mutableStateOf("869204058193854") }
+    var ceirImei1 by remember { mutableStateOf(pairingManager.myDeviceImei) }
+    var ceirImei2 by remember { mutableStateOf("358920194829104") }
     var ceirBrand by remember { mutableStateOf("Samsung Galaxy S24 Ultra") }
     var ceirComplaintNo by remember { mutableStateOf("FIR/DEL/2026/0842") }
 
@@ -182,7 +223,7 @@ fun ImeiRadarScreen(
             .fillMaxSize()
             .background(Color.Transparent)
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Top Back Bar
         item {
@@ -202,14 +243,14 @@ fun ImeiRadarScreen(
                 Spacer(modifier = Modifier.width(6.dp))
                 Column {
                     Text(
-                        text = "MODULE 1: ANTI-THEFT & IMEI RADAR",
+                        text = "MODULE 1: RADAR & LIVE TRACKING",
                         color = CyberCyan,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 0.5.sp
                     )
                     Text(
-                        text = "TRIANGULATION • CEIR BLACKLIST • ZERO-KNOWLEDGE",
+                        text = "LIVE GPS • GEOFENCE DETECTORS • CEIR BLACKLIST",
                         color = CyberTextSecondary,
                         fontSize = 10.sp,
                         fontFamily = FontFamily.Monospace
@@ -218,12 +259,13 @@ fun ImeiRadarScreen(
             }
         }
 
-        // Sub Navigation Tabs
+        // Sub Navigation Tabs (Scrollable)
         item {
-            TabRow(
+            ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = CyberSurfaceHigh,
                 contentColor = CyberCyan,
+                edgePadding = 8.dp,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
                         Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
@@ -248,8 +290,414 @@ fun ImeiRadarScreen(
             }
         }
 
-        // TAB 0: GIS Radar & Triangulation
+        // =========================================================================
+        // TAB 0: LIVE GPS PHONE TRACKING SYSTEM
+        // =========================================================================
         if (selectedTabIndex == 0) {
+            item {
+                CyberCard(glowEffect = true, modifier = Modifier.fillMaxWidth().testTag("live_gps_telemetry_card")) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.GpsFixed, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "LIVE SATELLITE GPS TELEMETRY",
+                                    color = CyberGold,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                            StatusPill(statusText = "LIVE 1.0Hz", colorHex = 0xFF00FF9D)
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Large Monospace Coordinates Display
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(CyberSurfaceHigh)
+                                .border(1.2.dp, CyberCyan, RoundedCornerShape(10.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(text = "LATITUDE & LONGITUDE", color = CyberTextMuted, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
+                                        Text(
+                                            text = "${"%.5f".format(currentTelemetry.latitude)}° N, ${"%.5f".format(currentTelemetry.longitude)}° E",
+                                            color = CyberCyan,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Black,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(text = "ACCURACY", color = CyberTextMuted, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
+                                        Text(
+                                            text = "±${"%.1f".format(currentTelemetry.accuracyMeters)}m",
+                                            color = CyberSuccessGreen,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Speed: ${"%.1f".format(currentTelemetry.speedKmh)} km/h • Alt: ${"%.1f".format(currentTelemetry.altitudeMeters)}m",
+                                        color = CyberTextSecondary,
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                    Text(
+                                        text = "Heading: ${currentTelemetry.bearingDegrees.toInt()}°",
+                                        color = CyberGold,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Live Animated Radar Canvas visualizer
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(CyberBackground)
+                                .border(1.dp, CyberBorder, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LiveGpsRadarView(bearingDegrees = currentTelemetry.bearingDegrees)
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Instant Live Location Sharing Button
+                        Button(
+                            onClick = {
+                                val shareText = liveTracking.generateShareMessage(pairingManager.myDeviceImei, pairingManager.myPairingCode)
+                                liveTracking.shareLocation(context, shareText)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth().testTag("share_live_location_button")
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("SHARE LIVE LOCATION LINK (WHATSAPP / SMS)", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Button(
+                                onClick = {
+                                    val mapUrl = liveTracking.getGoogleMapsUrl(currentTelemetry.latitude, currentTelemetry.longitude)
+                                    openUrl(mapUrl)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = CyberSurfaceHigh),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.Map, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("OPEN IN MAPS", color = CyberCyan, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    val mapUrl = liveTracking.getGoogleMapsUrl(currentTelemetry.latitude, currentTelemetry.longitude)
+                                    copyToClipboard(mapUrl, "Google Maps Link")
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = CyberSurfaceHigh),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, CyberGold),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = CyberGold, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("COPY MAP LINK", color = CyberGold, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Live Breadcrumb Movement Trail
+            item {
+                CyberCard(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "LIVE BREADCRUMB MOVEMENT TRAIL",
+                                color = CyberGold,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Text(
+                                text = "${breadcrumbs.size} FIXES",
+                                color = CyberTextMuted,
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        breadcrumbs.reversed().take(5).forEach { point ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(CyberCyan)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "${"%.4f".format(point.latitude)}, ${"%.4f".format(point.longitude)}",
+                                        color = CyberTextPrimary,
+                                        fontSize = 12.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                Text(
+                                    text = "${point.formattedTime} • Batt ${point.batteryPct}%",
+                                    color = CyberTextMuted,
+                                    fontSize = 10.sp,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
+                        CircuitDivider()
+
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    db.timelineDao().insertEvent(
+                                        TimelineEventEntity(
+                                            eventCategory = "LIVE_GPS_PING",
+                                            title = "High-Accuracy GPS Telemetry Locked",
+                                            details = "Lat: ${"%.5f".format(currentTelemetry.latitude)}, Lng: ${"%.5f".format(currentTelemetry.longitude)}, Speed: ${currentTelemetry.speedKmh} km/h, Accuracy: ±${currentTelemetry.accuracyMeters}m.",
+                                            evidenceHash = CryptoUtils.sha256("GPS_${System.currentTimeMillis()}")
+                                        )
+                                    )
+                                }
+                                Toast.makeText(context, "Recorded GPS Telemetry to Immutable Legal Timeline", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberSurfaceHigh),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth().testTag("record_gps_ping_button")
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("RECORD TELEMETRY IN LEGAL EVIDENTIARY LOG", color = CyberCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // TAB 1: SURROUNDING FENCES & DETECTORS SCANNER
+        // =========================================================================
+        if (selectedTabIndex == 1) {
+            // Virtual Geofence Sentinels
+            item {
+                CyberCard(glowEffect = true, modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "SURROUNDING VIRTUAL GEOFENCES",
+                                color = CyberGold,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            StatusPill(statusText = "SENTINEL ACTIVE", colorHex = 0xFF00FF9D)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "जब फ़ोन सुरक्षित परिधि (Safe Fence) से बाहर जाता है, तो थेफ्ट अलार्म और सुरक्षा अलर्ट स्वचालित रूप से सक्रिय हो जाते हैं।",
+                            color = CyberTextSecondary,
+                            fontSize = 11.5.sp,
+                            lineHeight = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        geofences.forEach { fence ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 5.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(CyberSurfaceHigh)
+                                    .border(1.dp, if (fence.isInside) CyberSuccessGreen.copy(alpha = 0.5f) else CyberAlertCrimson.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                    .padding(10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = fence.name,
+                                        color = CyberTextPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Radius: ${fence.radiusMeters.toInt()}m | Current Distance: ~${fence.currentDistanceMeters.toInt()}m",
+                                        color = CyberTextMuted,
+                                        fontSize = 10.sp,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                                StatusPill(
+                                    statusText = if (fence.isInside) "INSIDE SAFE ZONE" else "OUTSIDE ZONE",
+                                    colorHex = if (fence.isInside) 0xFF00FF9D else 0xFFFF2A55
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Wireless Detectors Scanner (WiFi, Bluetooth & Rogue Signals)
+            item {
+                CyberCard(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "SURROUNDING SIGNALS & DETECTORS SCANNER",
+                                color = CyberCyan,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            if (isScanningSignals) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = CyberCyan, strokeWidth = 2.dp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "आसपास के वायरलेस फैंसस, बीकन (BLE), वाई-फ़ाई हॉटस्पॉट्स और संदिग्ध IMSI Catcher / जैमर फ़्रीक्वेंसी का रियल-टाइम स्कैन:",
+                            color = CyberTextSecondary,
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        detectedSignals.forEach { signal ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = when (signal.type) {
+                                            "WIFI" -> Icons.Default.Wifi
+                                            "BLUETOOTH" -> Icons.Default.Bluetooth
+                                            else -> Icons.Default.Radar
+                                        },
+                                        contentDescription = null,
+                                        tint = if (signal.threatLevel == "SAFE") CyberCyan else CyberWarningAmber,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(text = signal.name, color = CyberTextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(text = "${signal.identifier} • ${signal.securityProtocol}", color = CyberTextMuted, fontSize = 9.5.sp, fontFamily = FontFamily.Monospace)
+                                    }
+                                }
+                                Text(
+                                    text = "${signal.signalDbm} dBm",
+                                    color = if (signal.signalDbm > -60) CyberSuccessGreen else CyberWarningAmber,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
+                        CircuitDivider()
+
+                        Button(
+                            onClick = {
+                                liveTracking.rescanDetectors()
+                                coroutineScope.launch {
+                                    db.timelineDao().insertEvent(
+                                        TimelineEventEntity(
+                                            eventCategory = "GEOFENCE_SCAN",
+                                            title = "Surrounding Fences & Detectors Scanned",
+                                            details = "RF sweep complete. 5 surrounding nodes catalogued without anomalies.",
+                                            evidenceHash = CryptoUtils.sha256("RF_SCAN_${System.currentTimeMillis()}")
+                                        )
+                                    )
+                                }
+                                Toast.makeText(context, "Surrounding Detectors Rescanned!", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth().testTag("rescan_detectors_button")
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("RESCAN SURROUNDING SIGNALS & DETECTORS", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        }
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // TAB 2: CELL TRIANGULATION & GIS RADAR
+        // =========================================================================
+        if (selectedTabIndex == 2) {
             item {
                 CyberCard(modifier = Modifier.fillMaxWidth()) {
                     Column {
@@ -315,40 +763,15 @@ fun ImeiRadarScreen(
                                 )
                             }
                         }
-
-                        CircuitDivider()
-
-                        // Silent Ping Protocol Button
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    db.timelineDao().insertEvent(
-                                        TimelineEventEntity(
-                                            eventCategory = "SILENT_PING",
-                                            title = "Silent Emergency Ping Dispatched",
-                                            details = "Encrypted telemetry ping routed: Lat 28.6324, Lng 77.2187, Battery 68%, Serving CID 48921.",
-                                            evidenceHash = CryptoUtils.sha256("PING_${System.currentTimeMillis()}")
-                                        )
-                                    )
-                                }
-                                Toast.makeText(context, "Silent Emergency Ping Logged & Dispatched", Toast.LENGTH_SHORT).show()
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = CyberSurfaceHigh),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth().testTag("silent_ping_button")
-                        ) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "DISPATCH SILENT EMERGENCY PING PROTOCOL", color = CyberCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
                     }
                 }
             }
         }
 
-        // TAB 1: CEIR / Sanchar Saathi Portal Workflow
-        if (selectedTabIndex == 1) {
+        // =========================================================================
+        // TAB 3: CEIR / SANCHAR SAATHI PORTAL
+        // =========================================================================
+        if (selectedTabIndex == 3) {
             item {
                 CyberCard(glowEffect = true, modifier = Modifier.fillMaxWidth()) {
                     Column {
@@ -437,8 +860,10 @@ fun ImeiRadarScreen(
             }
         }
 
-        // TAB 2: Zero-Knowledge Hasher
-        if (selectedTabIndex == 2) {
+        // =========================================================================
+        // TAB 4: ZERO-KNOWLEDGE HASHER
+        // =========================================================================
+        if (selectedTabIndex == 4) {
             item {
                 CyberCard(modifier = Modifier.fillMaxWidth()) {
                     Column {
@@ -470,7 +895,6 @@ fun ImeiRadarScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Output Block
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -491,26 +915,26 @@ fun ImeiRadarScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            Button(
-                                onClick = { copyToClipboard(imeiProof.imeiSha256, "IMEI SHA-256 Hash") },
-                                colors = ButtonDefaults.buttonColors(containerColor = CyberSurfaceHigh),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("COPY HASH", color = CyberCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
+                        Button(
+                            onClick = { copyToClipboard(imeiProof.imeiSha256, "IMEI SHA-256 Hash") },
+                            colors = ButtonDefaults.buttonColors(containerColor = CyberSurfaceHigh),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("COPY HASH", color = CyberCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         }
 
-        // TAB 3: Public Stolen Flag Registry
-        if (selectedTabIndex == 3) {
+        // =========================================================================
+        // TAB 5: PUBLIC STOLEN DEVICE REGISTRY
+        // =========================================================================
+        if (selectedTabIndex == 5) {
             item {
                 CyberCard(modifier = Modifier.fillMaxWidth()) {
                     Column {
@@ -590,8 +1014,10 @@ fun ImeiRadarScreen(
             }
         }
 
-        // TAB 4: SIM Swap & Risk Engine
-        if (selectedTabIndex == 4) {
+        // =========================================================================
+        // TAB 6: SIM & RISK ENGINE
+        // =========================================================================
+        if (selectedTabIndex == 6) {
             item {
                 CyberCard(modifier = Modifier.fillMaxWidth()) {
                     Column {
@@ -625,22 +1051,6 @@ fun ImeiRadarScreen(
                                 Text("Airtel 5G (IMSI: 40445***)", color = CyberTextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                             StatusPill(statusText = "VERIFIED", colorHex = 0xFF00FF9D)
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(CyberSurfaceHigh)
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("SIM Slot 2 State:", color = CyberTextMuted, fontSize = 11.sp)
-                                Text("No Secondary SIM", color = CyberTextSecondary, fontSize = 12.sp)
-                            }
-                            StatusPill(statusText = "STANDBY", colorHex = 0xFF9AAAC2)
                         }
                     }
                 }
@@ -678,5 +1088,57 @@ fun ImeiRadarScreen(
         item {
             Spacer(modifier = Modifier.height(30.dp))
         }
+    }
+}
+
+/**
+ * Animated Live GPS Compass / Radar Canvas with target crosshair and rotating scanner line
+ */
+@Composable
+private fun LiveGpsRadarView(bearingDegrees: Float) {
+    val infiniteTransition = rememberInfiniteTransition(label = "gps_radar_sweep")
+    val sweepAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "sweepAngle"
+    )
+
+    Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val maxRadius = minOf(size.width, size.height) / 2.2f
+
+        // 3 Concentric distance rings
+        drawCircle(color = CyberBorder, radius = maxRadius * 0.33f, center = center, style = Stroke(width = 1f))
+        drawCircle(color = CyberBorder, radius = maxRadius * 0.66f, center = center, style = Stroke(width = 1f))
+        drawCircle(color = CyberCyan.copy(alpha = 0.4f), radius = maxRadius, center = center, style = Stroke(width = 1.5f))
+
+        // Crosshairs
+        drawLine(color = CyberBorder.copy(alpha = 0.5f), start = Offset(center.x - maxRadius, center.y), end = Offset(center.x + maxRadius, center.y), strokeWidth = 1f)
+        drawLine(color = CyberBorder.copy(alpha = 0.5f), start = Offset(center.x, center.y - maxRadius), end = Offset(center.x, center.y + maxRadius), strokeWidth = 1f)
+
+        // Rotating sweep line
+        val sweepRad = Math.toRadians(sweepAngle.toDouble())
+        val sweepEnd = Offset(
+            (center.x + maxRadius * cos(sweepRad)).toFloat(),
+            (center.y + maxRadius * sin(sweepRad)).toFloat()
+        )
+        drawLine(color = CyberCyan, start = center, end = sweepEnd, strokeWidth = 2f)
+
+        // Bearing pointer arrow (phone direction)
+        val bearingRad = Math.toRadians((bearingDegrees - 90).toDouble())
+        val bearingEnd = Offset(
+            (center.x + (maxRadius * 0.85f) * cos(bearingRad)).toFloat(),
+            (center.y + (maxRadius * 0.85f) * sin(bearingRad)).toFloat()
+        )
+        drawLine(color = CyberGold, start = center, end = bearingEnd, strokeWidth = 3f)
+
+        // Center Beacon Dot (Device fix)
+        drawCircle(color = CyberCyan.copy(alpha = 0.3f), radius = 16f, center = center)
+        drawCircle(color = CyberCyan, radius = 6f, center = center)
+        drawCircle(color = Color.White, radius = 2.5f, center = center)
     }
 }

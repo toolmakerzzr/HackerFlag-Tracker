@@ -2,70 +2,96 @@ package com.example
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.example.data.model.FeatureCatalog
-import com.example.data.model.FeatureCategory
-import com.example.data.security.CryptoUtils
+import com.example.data.forensics.HackerFlagLogger
+import com.example.data.interceptor.ThreatDefenseManager
+import com.example.data.sandbox.HoneyPotSandboxEngine
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [34])
 class ExampleRobolectricTest {
 
     @Test
     fun `read string from context`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val appName = context.getString(R.string.app_name)
-        assertEquals("Hackerflag Tracker", appName)
+        assertEquals("CyberShield Pro", appName)
     }
 
     @Test
-    fun `verify crypto sha256 and zero-knowledge proof`() {
-        val imei = "869204058193847"
-        val hash = CryptoUtils.sha256(imei)
-        assertNotNull(hash)
-        assertEquals(64, hash.length)
+    fun `verify threat defense url tier 1 bloom filter and heuristics`() {
+        // Phishing typosquatting link
+        val res1 = ThreatDefenseManager.inspectUrl("https://paypa1-security.xyz/login")
+        assertTrue(res1.isBlocked)
+        assertEquals("TIER_1_LOCAL_BLOOM", res1.tier)
 
-        val proof = CryptoUtils.generateZkImeiProof(imei, "test-salt")
-        assertTrue(proof.rawImeiMasked.contains("••••••••"))
-        assertEquals(hash, proof.imeiSha256)
-        assertNotNull(proof.zeroKnowledgeCommitment)
+        // Raw IP link bypass
+        val res2 = ThreatDefenseManager.inspectUrl("http://192.168.1.1:8080/payload.apk")
+        assertTrue(res2.isBlocked)
+        assertEquals("TIER_1_RAW_IP", res2.tier)
+
+        // Heuristic credential harvesting token
+        val res3 = ThreatDefenseManager.inspectUrl("https://example.com/update-kyc/urgent")
+        assertTrue(res3.isBlocked)
+        assertEquals("TIER_2_HEURISTIC", res3.tier)
+
+        // Clean link
+        val res4 = ThreatDefenseManager.inspectUrl("https://developer.android.com/guide")
+        assertFalse(res4.isBlocked)
     }
 
     @Test
-    fun `verify feature catalog search and categorization`() {
-        val all = FeatureCatalog.search("")
-        assertTrue(all.isNotEmpty())
-        assertTrue(all.size >= 25)
-
-        val bankResults = FeatureCatalog.search("bank")
-        assertTrue(bankResults.any { it.id == "ussd_freeze" })
-        assertTrue(bankResults.any { it.id == "multi_bank_freeze" })
-
-        val helplineResults = FeatureCatalog.search("1930")
-        assertTrue(helplineResults.any { it.id == "cyber_helpline_1930" })
-
-        val ceirResults = FeatureCatalog.search("ceir")
-        assertTrue(ceirResults.any { it.id == "ceir_portal" })
-
-        val legalResults = FeatureCatalog.search("", FeatureCategory.LEGAL)
-        assertTrue(legalResults.any { it.id == "police_fir_draft" })
-
-        val emptyResults = FeatureCatalog.search("xyznonexistent123")
-        assertTrue(emptyResults.isEmpty())
-    }
-
-    @Test
-    fun `verify biometric auth manager availability and emergency passcode`() {
+    fun `verify hacker flag forensics logger file and summaries`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val availability = com.example.data.security.BiometricAuthManager.checkAvailability(context)
-        assertNotNull(availability)
-        assertNotNull(availability.description)
-        assertEquals("9999", com.example.data.security.BiometricAuthManager.DEFAULT_EMERGENCY_PASSCODE)
+        HackerFlagLogger.initializeSampleLogsIfEmpty(context)
+        val file = HackerFlagLogger.getLogFile(context)
+        assertTrue(file.exists())
+        assertTrue(file.length() > 0)
+
+        val summaries = HackerFlagLogger.getRecentSummaries(context)
+        assertTrue(summaries.isNotEmpty())
+
+        HackerFlagLogger.logEvent(
+            context = context,
+            threatType = "PHISHING_URL_BLOCKED",
+            target = "https://test-phish.xyz",
+            description = "Test phishing block verification"
+        )
+        val logs = HackerFlagLogger.readLogs(context)
+        assertTrue(logs.contains("test-phish.xyz"))
+        assertTrue(logs.contains("RFC 5737 Synthetic Non-Routable Decoy"))
+    }
+
+    @Test
+    fun `verify honeypot sandbox engine virtualization and decoy telemetry`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val session = HoneyPotSandboxEngine.spawnSandbox(context, "Test Intrusion")
+        assertNotNull(session)
+        assertTrue(session.decoyIp.startsWith("198.51.100."))
+        assertTrue(session.trappedCommands.isNotEmpty())
+        assertTrue(session.isActive)
+
+        HoneyPotSandboxEngine.terminateSandbox(context)
+        assertFalse(session.isActive)
+    }
+
+    @Test
+    fun `verify malicious apk detection and auto-wipe`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val testApk = File(context.cacheDir, "test_dropper_patch.apk")
+        testApk.writeText("MOCK_DEX_CODE")
+        assertTrue(testApk.exists())
+
+        val wiped = ThreatDefenseManager.inspectAndNeutralizeApk(context, testApk)
+        assertTrue(wiped)
+        assertFalse(testApk.exists())
     }
 }

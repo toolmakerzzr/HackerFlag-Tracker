@@ -1,14 +1,16 @@
 package com.example
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.compose.BackHandler
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.fragment.app.FragmentActivity
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,423 +20,344 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Radar
-import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.model.FeatureItem
-import com.example.ui.components.ComfortableBackground
-import com.example.ui.components.PoliceSosButton
-import com.example.ui.screens.ActiveTheftPanicScreen
-import com.example.ui.screens.AiDefenseAssistantDialog
-import com.example.ui.screens.B2bApiScreen
-import com.example.ui.screens.BiometricEntryGateScreen
-import com.example.ui.screens.DashboardScreen
-import com.example.ui.screens.FinancialLockdownScreen
-import com.example.ui.screens.ImeiRadarScreen
-import com.example.ui.screens.LegalFirScreen
-import com.example.ui.screens.RemoteDefenseScreen
-import com.example.ui.theme.CyberAlertCrimson
-import com.example.ui.theme.CyberBackground
-import com.example.ui.theme.CyberBorder
-import com.example.ui.theme.CyberCyan
-import com.example.ui.theme.CyberGold
-import com.example.ui.theme.CyberSurfaceHigh
-import com.example.ui.theme.CyberSurfaceVariant
-import com.example.ui.theme.CyberTextMuted
-import com.example.ui.theme.CyberTextPrimary
-import com.example.ui.theme.CyberTextSecondary
-import com.example.ui.theme.HackerflagTheme
+import androidx.core.content.ContextCompat
+import com.example.data.forensics.HackerFlagLogger
+import com.example.data.interceptor.ThreatDefenseManager
+import com.example.service.CyberSentinelService
+import com.example.ui.components.CyberSettingsDialog
+import com.example.ui.components.EdgeGlowOverlay
+import com.example.ui.components.ForensicAuditDialog
+import com.example.ui.components.ForensicRecentActivityCard
+import com.example.ui.components.HeroShieldSection
+import com.example.ui.components.MatrixSandboxDialog
+import com.example.ui.components.StatusBanner
+import com.example.ui.components.ThreatSimulatorPanel
+import com.example.ui.components.ThreatStatsGrid
+import com.example.ui.theme.CyberDarkBg
+import com.example.ui.theme.CyberGlassBorder
+import com.example.ui.theme.CyberGlassCard
+import com.example.ui.theme.CyberGreenGlow
+import com.example.ui.theme.CyberGreenPrimary
+import com.example.ui.theme.CyberShieldTheme
+import com.example.ui.theme.CyberTextDim
+import com.example.ui.theme.CyberTextWhite
 
-enum class ScreenState {
-    DASHBOARD,
-    ACTIVE_THEFT,
-    IMEI_RADAR,
-    BANKING,
-    LEGAL_FIR,
-    REMOTE_DEFENSE,
-    B2B_QR
-}
+class MainActivity : ComponentActivity() {
 
-class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize core security engine & sample forensics
+        ThreatDefenseManager.initialize(applicationContext)
+        HackerFlagLogger.initializeSampleLogsIfEmpty(applicationContext)
+
+        // Launch persistent status daemon
+        CyberSentinelService.startService(applicationContext)
+
+        // Handle incoming URL intent if opened from browser or messaging app
+        handleIncomingIntent(intent)
+
         setContent {
-            HackerflagTheme {
-                HackerflagApp()
+            CyberShieldTheme {
+                CyberShieldApp(
+                    onHandleIntent = { handleIncomingIntent(it) }
+                )
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        if (intent == null) return
+        val action = intent.action
+        val data = intent.data
+        if (action == Intent.ACTION_VIEW && data != null) {
+            val urlString = data.toString()
+            val result = ThreatDefenseManager.inspectUrl(urlString)
+            if (result.isBlocked) {
+                ThreatDefenseManager.handleBlockedUrl(this, urlString, result.reason)
+                Toast.makeText(this, "CyberShield: Malicious URL Blocked ($urlString)", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "CyberShield: URL verified safe ($urlString)", Toast.LENGTH_SHORT).show()
             }
         }
     }
 }
 
 @Composable
-fun HackerflagApp() {
-    var isOwnerAuthenticated by remember { mutableStateOf(false) }
-    var currentScreen by remember { mutableStateOf(ScreenState.DASHBOARD) }
-    var showAiDialog by remember { mutableStateOf(false) }
-    var aiDialogInitialQuery by remember { mutableStateOf("") }
+fun CyberShieldApp(
+    onHandleIntent: (Intent) -> Unit
+) {
+    val context = LocalContext.current
 
-    // Tab state memory for direct deep-linking from search
-    var imeiTabIndex by remember { mutableIntStateOf(0) }
-    var bankingTabIndex by remember { mutableIntStateOf(0) }
-    var legalTabIndex by remember { mutableIntStateOf(0) }
-    var b2bTabIndex by remember { mutableIntStateOf(0) }
-
-    if (!isOwnerAuthenticated) {
-        ComfortableBackground(modifier = Modifier.fillMaxSize()) {
-            BiometricEntryGateScreen(
-                onAuthenticationSuccess = {
-                    isOwnerAuthenticated = true
-                }
-            )
+    // Request Notification permission on Android 13+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            CyberSentinelService.startService(context)
         }
-        return
     }
 
-    BackHandler(enabled = currentScreen != ScreenState.DASHBOARD) {
-        currentScreen = ScreenState.DASHBOARD
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionStatus = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 
-    ComfortableBackground(modifier = Modifier.fillMaxSize()) {
+    // Reactive threat telemetry
+    val isShieldActive by ThreatDefenseManager.isShieldActive.collectAsState()
+    val isThreatActive by ThreatDefenseManager.isThreatActive.collectAsState()
+    val statusTitle by ThreatDefenseManager.currentStatusTitle.collectAsState()
+    val statusSubtitle by ThreatDefenseManager.currentStatusSubtitle.collectAsState()
+    val linksBlocked by ThreatDefenseManager.linksBlockedCount.collectAsState()
+    val apkWiped by ThreatDefenseManager.apkWipedCount.collectAsState()
+    val sandboxTraps by ThreatDefenseManager.sandboxTrapsCount.collectAsState()
+    val batteryDrain by ThreatDefenseManager.batteryDrain.collectAsState()
+    val recentEvents by ThreatDefenseManager.recentEvents.collectAsState()
+
+    // Modals state
+    var showForensicsDialog by remember { mutableStateOf(false) }
+    var showSandboxDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var glowIntensity by remember { mutableFloatStateOf(1.0f) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF090E17),
+                        Color(0xFF0C1424),
+                        Color(0xFF070B13)
+                    )
+                )
+            )
+    ) {
+        // Transparent Edge-Lighting Alert Overlay (Vector Glow perimeter)
+        EdgeGlowOverlay(
+            isThreat = isThreatActive,
+            isShieldActive = isShieldActive,
+            glowIntensity = glowIntensity,
+            modifier = Modifier.fillMaxSize()
+        )
+
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color.Transparent,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            bottomBar = {
-                CyberBottomNavigation(
-                    currentScreen = currentScreen,
-                    onScreenSelected = { currentScreen = it }
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {
-                        aiDialogInitialQuery = ""
-                        showAiDialog = true
-                    },
-                    containerColor = CyberCyan,
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .padding(bottom = 8.dp)
-                        .testTag("fab_ai_assistant")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SmartToy,
-                        contentDescription = "AI Defense Assistant",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        ) { innerPadding ->
-            Box(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { paddingValues ->
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(WindowInsets.systemBars.asPaddingValues()),
-                contentAlignment = Alignment.TopCenter
+                    .padding(paddingValues)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .widthIn(max = 640.dp)
-                ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        // Global Upper Right Corner Bar when on secondary screens
-                        if (currentScreen != ScreenState.DASHBOARD) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color.White)
-                                    .border(0.8.dp, CyberBorder)
-                                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "HACKERFLAG",
-                                        color = CyberCyan,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Black,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                    Text(
-                                        text = " // MADE BY AKASH TIWARI",
-                                        color = CyberGold,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Black,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(CyberAlertCrimson.copy(alpha = 0.1f))
-                                            .border(0.8.dp, CyberAlertCrimson.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                                            .clickable { isOwnerAuthenticated = false }
-                                            .padding(horizontal = 7.dp, vertical = 4.dp)
-                                            .testTag("secondary_lock_button")
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Lock,
-                                            contentDescription = "Lock Terminal",
-                                            tint = CyberAlertCrimson,
-                                            modifier = Modifier.size(11.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(3.dp))
-                                        Text(
-                                            text = "LOCK",
-                                            color = CyberAlertCrimson,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Black,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    // 3-Second Police SOS Hold Button in Upper Right Corner
-                                    PoliceSosButton()
-                                }
-                            }
-                        }
+                Spacer(modifier = Modifier.height(10.dp))
 
-                        Box(modifier = Modifier.weight(1f)) {
-                        AnimatedContent(
-                            targetState = currentScreen,
-                            transitionSpec = { fadeIn() togetherWith fadeOut() },
-                            label = "screenTransition"
-                        ) { screen ->
-                            when (screen) {
-                                ScreenState.DASHBOARD -> DashboardScreen(
-                                    onNavigateToActiveTheft = { currentScreen = ScreenState.ACTIVE_THEFT },
-                                    onNavigateToImeiRadar = { tab ->
-                                        imeiTabIndex = tab
-                                        currentScreen = ScreenState.IMEI_RADAR
-                                    },
-                                    onNavigateToBanking = { tab ->
-                                        bankingTabIndex = tab
-                                        currentScreen = ScreenState.BANKING
-                                    },
-                                    onNavigateToLegalFir = { tab ->
-                                        legalTabIndex = tab
-                                        currentScreen = ScreenState.LEGAL_FIR
-                                    },
-                                    onNavigateToRemoteDefense = { currentScreen = ScreenState.REMOTE_DEFENSE },
-                                    onNavigateToB2bQr = { tab ->
-                                        b2bTabIndex = tab
-                                        currentScreen = ScreenState.B2B_QR
-                                    },
-                                    onOpenAiAssistant = { query ->
-                                        aiDialogInitialQuery = query
-                                        showAiDialog = true
-                                    },
-                                    onNavigateToFeature = { feature ->
-                                        when (feature.targetScreen) {
-                                            ScreenState.DASHBOARD -> currentScreen = ScreenState.DASHBOARD
-                                            ScreenState.ACTIVE_THEFT -> currentScreen = ScreenState.ACTIVE_THEFT
-                                            ScreenState.IMEI_RADAR -> {
-                                                imeiTabIndex = feature.targetTab
-                                                currentScreen = ScreenState.IMEI_RADAR
-                                            }
-                                            ScreenState.BANKING -> {
-                                                bankingTabIndex = feature.targetTab
-                                                currentScreen = ScreenState.BANKING
-                                            }
-                                            ScreenState.LEGAL_FIR -> {
-                                                legalTabIndex = feature.targetTab
-                                                currentScreen = ScreenState.LEGAL_FIR
-                                            }
-                                            ScreenState.REMOTE_DEFENSE -> currentScreen = ScreenState.REMOTE_DEFENSE
-                                            ScreenState.B2B_QR -> {
-                                                b2bTabIndex = feature.targetTab
-                                                currentScreen = ScreenState.B2B_QR
-                                            }
-                                        }
-                                    },
-                                    onLockConsole = { isOwnerAuthenticated = false }
-                                )
-                                ScreenState.ACTIVE_THEFT -> ActiveTheftPanicScreen(
-                                    onNavigateBack = { currentScreen = ScreenState.DASHBOARD },
-                                    onNavigateToFir = {
-                                        legalTabIndex = 0
-                                        currentScreen = ScreenState.LEGAL_FIR
-                                    }
-                                )
-                                ScreenState.IMEI_RADAR -> ImeiRadarScreen(
-                                    onNavigateBack = { currentScreen = ScreenState.DASHBOARD },
-                                    initialTabIndex = imeiTabIndex
-                                )
-                                ScreenState.BANKING -> FinancialLockdownScreen(
-                                    onNavigateBack = { currentScreen = ScreenState.DASHBOARD },
-                                    initialTabIndex = bankingTabIndex
-                                )
-                                ScreenState.LEGAL_FIR -> LegalFirScreen(
-                                    onNavigateBack = { currentScreen = ScreenState.DASHBOARD },
-                                    initialTabIndex = legalTabIndex
-                                )
-                                ScreenState.REMOTE_DEFENSE -> RemoteDefenseScreen(
-                                    onNavigateBack = { currentScreen = ScreenState.DASHBOARD }
-                                )
-                                ScreenState.B2B_QR -> B2bApiScreen(
-                                    onNavigateBack = { currentScreen = ScreenState.DASHBOARD },
-                                    initialTabIndex = b2bTabIndex
-                                )
-                            }
-                        }
+                // 1. Top Bar (Glassmorphic) matching wireframe
+                TopGlassmorphicBar(
+                    onSettingsClick = { showSettingsDialog = true }
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 2. Active Status Banner (Green -> Red if Unsafe)
+                StatusBanner(
+                    title = statusTitle,
+                    subtitle = statusSubtitle,
+                    isThreat = isThreatActive
+                )
+
+                // 3. Hero Section with Smooth Glow Effect & ON/OFF switch
+                HeroShieldSection(
+                    isShieldActive = isShieldActive,
+                    isThreat = isThreatActive,
+                    onToggle = { enabled ->
+                        ThreatDefenseManager.toggleShield(context, enabled)
                     }
-                }
-            }
+                )
+
+                // 4. Live Threat Analytics Grid (2x2)
+                ThreatStatsGrid(
+                    linksBlocked = linksBlocked,
+                    apkWiped = apkWiped,
+                    sandboxTraps = sandboxTraps,
+                    batteryDrain = batteryDrain
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 5. Recent Activity & Hacker Forensics with [ View hacker_flag.txt ]
+                ForensicRecentActivityCard(
+                    events = recentEvents,
+                    onViewFileClick = { showForensicsDialog = true }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 6. Threat Simulator & Testing Lab (Test Phishing, APK Wipe, Honey-Pot)
+                ThreatSimulatorPanel(
+                    onOpenMatrixSandbox = { showSandboxDialog = true }
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
-    }
 
-    if (showAiDialog) {
-        AiDefenseAssistantDialog(
-            initialQuery = aiDialogInitialQuery,
-            onDismiss = {
-                showAiDialog = false
-                aiDialogInitialQuery = ""
-            }
-        )
+        // Dialog Modals
+        if (showForensicsDialog) {
+            ForensicAuditDialog(
+                onDismiss = { showForensicsDialog = false },
+                onLogsUpdated = {
+                    ThreatDefenseManager.refreshEvents(context)
+                }
+            )
+        }
+
+        if (showSandboxDialog) {
+            MatrixSandboxDialog(
+                onDismiss = {
+                    showSandboxDialog = false
+                    ThreatDefenseManager.clearActiveThreat()
+                },
+                onSandboxUpdated = {
+                    ThreatDefenseManager.refreshEvents(context)
+                }
+            )
+        }
+
+        if (showSettingsDialog) {
+            CyberSettingsDialog(
+                currentGlowIntensity = glowIntensity,
+                onGlowIntensityChanged = { glowIntensity = it },
+                onDismiss = { showSettingsDialog = false }
+            )
+        }
     }
 }
 
 @Composable
-fun CyberBottomNavigation(
-    currentScreen: ScreenState,
-    onScreenSelected: (ScreenState) -> Unit
+private fun TopGlassmorphicBar(
+    onSettingsClick: () -> Unit
 ) {
-    NavigationBar(
-        containerColor = Color.White.copy(alpha = 0.98f),
-        tonalElevation = 4.dp,
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(0.8.dp, CyberBorder)
-            .testTag("cyber_bottom_nav")
+            .clip(RoundedCornerShape(16.dp))
+            .background(CyberGlassCard.copy(alpha = 0.85f))
+            .border(1.dp, CyberGlassBorder, RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .testTag("top_glassmorphic_bar"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // 1. Dashboard
-        NavigationBarItem(
-            selected = currentScreen == ScreenState.DASHBOARD,
-            onClick = { onScreenSelected(ScreenState.DASHBOARD) },
-            icon = { Icon(Icons.Default.Dashboard, contentDescription = "Dashboard") },
-            label = { Text("Command", fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = CyberCyan,
-                selectedTextColor = CyberCyan,
-                unselectedIconColor = CyberTextMuted,
-                unselectedTextColor = CyberTextMuted,
-                indicatorColor = CyberSurfaceVariant
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(CyberGreenPrimary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = "CyberShield Logo",
+                    tint = CyberGreenGlow,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "CyberShield Pro",
+                color = CyberTextWhite,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.3.sp
             )
-        )
+        }
 
-        // 2. Radar
-        NavigationBarItem(
-            selected = currentScreen == ScreenState.IMEI_RADAR,
-            onClick = { onScreenSelected(ScreenState.IMEI_RADAR) },
-            icon = { Icon(Icons.Default.Radar, contentDescription = "Radar") },
-            label = { Text("Radar", fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = CyberCyan,
-                selectedTextColor = CyberCyan,
-                unselectedIconColor = CyberTextMuted,
-                unselectedTextColor = CyberTextMuted,
-                indicatorColor = CyberSurfaceVariant
+        // [ ⚙ Settings ] Button matching wireframe
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { onSettingsClick() }
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .testTag("settings_button"),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "[ ",
+                color = CyberTextDim,
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace
             )
-        )
-
-        // 3. Emergency Panic
-        NavigationBarItem(
-            selected = currentScreen == ScreenState.ACTIVE_THEFT,
-            onClick = { onScreenSelected(ScreenState.ACTIVE_THEFT) },
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(CyberAlertCrimson),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Warning, contentDescription = "Panic", tint = Color.White, modifier = Modifier.size(18.dp))
-                }
-            },
-            label = { Text("🚨 PANIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = CyberAlertCrimson) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = CyberAlertCrimson,
-                selectedTextColor = CyberAlertCrimson,
-                unselectedIconColor = CyberAlertCrimson,
-                unselectedTextColor = CyberAlertCrimson,
-                indicatorColor = Color.Transparent
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = CyberTextDim,
+                modifier = Modifier.size(15.dp)
             )
-        )
-
-        // 4. Banking
-        NavigationBarItem(
-            selected = currentScreen == ScreenState.BANKING,
-            onClick = { onScreenSelected(ScreenState.BANKING) },
-            icon = { Icon(Icons.Default.AccountBalance, contentDescription = "Banking") },
-            label = { Text("Banks", fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = CyberGold,
-                selectedTextColor = CyberGold,
-                unselectedIconColor = CyberTextMuted,
-                unselectedTextColor = CyberTextMuted,
-                indicatorColor = CyberSurfaceVariant
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Settings ]",
+                color = CyberTextDim,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace
             )
-        )
-
-        // 5. Legal FIR
-        NavigationBarItem(
-            selected = currentScreen == ScreenState.LEGAL_FIR,
-            onClick = { onScreenSelected(ScreenState.LEGAL_FIR) },
-            icon = { Icon(Icons.Default.Gavel, contentDescription = "FIR") },
-            label = { Text("FIR Law", fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = CyberCyan,
-                selectedTextColor = CyberCyan,
-                unselectedIconColor = CyberTextMuted,
-                unselectedTextColor = CyberTextMuted,
-                indicatorColor = CyberSurfaceVariant
-            )
-        )
+        }
     }
 }

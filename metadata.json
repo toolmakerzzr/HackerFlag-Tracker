@@ -1,6 +1,6 @@
 {
-  "name": "Hackerflag Tracker",
-  "description": "Ultra-secure anti-theft and emergency mitigation platform made by Akash Tiwari. Features BiometricPrompt owner entry point, 3-sec Police SOS, and IMEI radar.",
+  "name": "CyberShield Pro",
+  "description": "Zero-Lag Deception & Threat Neutralization System featuring real-time URL interception, malicious APK auto-wipe, and Matrix honeypot forensics.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

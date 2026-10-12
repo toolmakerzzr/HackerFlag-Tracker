@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Hackerflag Tracker"
+rootProject.name = "CyberShield Pro"
 
 include(":app")
